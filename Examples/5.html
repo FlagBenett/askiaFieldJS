@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+	<link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+	<script type="text/javascript" src="../askiafield.js"></script>
+	<script type="text/javascript" src="../config/config.js"></script>
+</head>
+<body class="container" onload="init()">
+	<h1>Example 5 : .qex update working copy</h1>
+	<h2>Documentation about this API can be found at: <a id="doc" href=""></a></h2>
+	<div class="well control-container">
+		<p id="authMessage"></p>
+		<div class = "form">
+			<div class = "form-group">
+				<h3>Step 1 : choose your survey</h3>
+				<div id="selectSurveyContainer"></div>
+			</div>
+			<div class = "form-group">
+				<h3>Step 2 : choose your new .qex</h3>
+				<input class="btn btn-default" type="file" id="files" name="file" />
+			</div>
+			<button class="btn btn-default" id="updatesimple" onClick="myUpdate()" >Update</button>
+		</div>
+		 <output id="request"></output>    <br /><br />
+		<output id="result"></output>    
+	</div>
+   
+	<script>
+	
+	function init(){
+		askiafield.config(
+			{CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+		);
+		document.getElementById('doc').innerHTML = askiafield.CCAURL;
+		document.getElementById('doc').setAttribute("href",askiafield.CCAURL);
+		askiafield.auth(myConfig.login,myConfig.password,myConfig.module)
+		.then(function(json){
+			let successMessage = "connected with token "+json.Response.Token;
+			document.getElementById('authMessage').innerHTML = successMessage;
+			document.getElementById('authMessage').className = "bg-success";
+		})
+		.then(function(){
+			askiafield.getSurveys({})
+			.then(function(response){
+				response.json().then(function(json){JSONtoSelect(json.Response,'selectSurveyContainer')});
+			})
+		})
+		.catch(function(json){
+			let errorMessage = "error connecting : "+json.StatusCode;
+			document.getElementById('authMessage').innerHTML = errorMessage;
+			document.getElementById('authMessage').className = "bg-danger";
+		});
+	}
+	
+	
+	function JSONtoSelect(jsonList,selectID){
+		let selectHTML = '<select id="selectSurvey" name="selectSurvey">';
+		selectHTML += '<option value="" selected>Please choose</option>';
+		for (jsonListItem of jsonList){
+			selectHTML += '<option value='+jsonListItem.Id+'>'+jsonListItem.Id + '('+jsonListItem.Name+')'+'</option>';
+		}
+		selectHTML += '</select>';
+		document.getElementById(selectID).innerHTML = selectHTML;
+	}
+	
+	function myUpdate(){
+		let surveyId = document.getElementById("selectSurvey").value;
+		let jsonParams = {
+			'InterviewStorage': 1,
+			'KeepIncompletes':false
+		}
+		let inputID = files;
+		let onSuccess = function(json){
+			console.log(json);
+			document.getElementById('result').className="bg-success";
+			document.getElementById('result').innerHTML="Updated task with new content";
+		};
+		let onFailure = function(json){
+			alert(json);
+			document.getElementById('result').className="bg-danger";
+			document.getElementById('result').innerHTML="error code : "+json.StatusCode;
+		}
+		
+		var reader = new FileReader();
+		reader.readAsDataURL(inputID.files[0]);
+		reader.addEventListener("load", function () {
+			var dataString = reader.result;
+			var data = '--gc0p4Jq0M2Yt08jU534c0p\r\n';
+			data+='Content-Disposition: attachement; FileName="toto.qex"\r\n' +
+			'Content-Transfer-Encoding: base64 \r\n\r\n';
+			data += dataString;
+			data += '\r\n';
+			data +=  '--gc0p4Jq0M2Yt08jU534c0p--\r\n';
+			document.getElementById('request').innerHTML = "Sending data : "+data;
+			//sending this body to askiafield API
+			
+			return askiafield.updateSurvey({
+				body:data,
+				contentType: 'multipart/mixed ; boundary="gc0p4Jq0M2Yt08jU534c0p"',
+				surveyId:surveyId,
+				ignoreWarnings:true
+			})
+			.then(function(resp){
+				resp.json()
+				.then(function(json){
+					if (json.StatusCode!==200){
+						throw json;
+					}else {
+						onSuccess(json);
+					}
+				});
+			})
+			.catch(function(resp){
+				resp.json()
+				.then(function(json){
+					onFailure(json);
+				})
+			})
+		}); 
+	}
+
+    </script>
+</body>
+</html>

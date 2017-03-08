@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+	<link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+	<script type="text/javascript" src="../askiafield.js"></script>
+	<script type="text/javascript" src="../config/config.js"></script>
+</head>
+<body class="container" onload="init()">
+	<h1>Example 4 : PUT requests</h1>
+	<h2>Documentation about this API can be found at: <a id="doc" href=""></a></h2>
+	<div class="well control-container">
+		<p id="authMessage"></p>
+		<button class="btn btn-default"  onClick="getSurveyInfo()">Get Live Surveys</button>
+		<p id="resultinfo"></p>
+		<p id="resultinfo2"></p>
+		<p id="result"></p>
+	</div>
+   
+
+    <script>
+	
+	function getSurveyInfo(){
+		askiafield.getWebconnections({})
+		.then(function(response){
+			//console.log(response);
+			response.json().then(function(json){
+				document.getElementById('resultinfo').innerHTML = "fetched surveys from "+json.Response.length+" Webprod server(s)";
+			})
+		})
+		.then(function(){return askiafield.getSurveys({})})
+		.then(function(response){
+			console.log(response);
+			response.json().then(function(json){
+				ListToForm(json);
+			})
+		});
+	}
+	
+	function setOnline(checkbox,surveyId){
+		console.log(surveyId);
+		if (checkbox.checked){
+			askiafield.setSurveyOnline(
+				{
+					surveyId:surveyId,
+					webConnectionId:1,
+					body:{setOnline:true},
+				}
+			)
+			.then(function(response){
+				alert("Survey "+surveyId +" is now online");
+			});
+		}
+		else{
+			askiafield.setSurveyOnline({surveyId:surveyId,webConnectionId:1,body:{setOnline:false}});
+		}
+	}
+	
+	function init(){
+		askiafield.config(
+			{CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+		);
+		document.getElementById('doc').innerHTML = askiafield.CCAURL;
+		document.getElementById('doc').setAttribute("href",askiafield.CCAURL);
+		askiafield.auth(myConfig.login,myConfig.password,myConfig.module)
+		.then(function(json){
+			let successMessage = "connected with token "+json.Response.Token;
+			document.getElementById('authMessage').innerHTML = successMessage;
+			document.getElementById('authMessage').className = "bg-success";
+		})
+		.catch(function(json){
+			let errorMessage = "error connecting : "+json.StatusCode;
+			document.getElementById('authMessage').innerHTML = errorMessage;
+			document.getElementById('authMessage').className = "bg-danger";
+		});
+	}
+	
+	function ListToForm(json){
+		let generatedHTML="<ul>";
+		let filteredList=json.Response;
+		/*let filteredList=json.Response.filter(function(listItem){
+			//console.log(listItem.WebConnections);
+			return listItem.WebSurvey==true;
+		});*/
+		for(websurvey in filteredList){
+			let value=filteredList[websurvey];
+			generatedHTML += "<li>"+value.Name + ' Online : <input type="checkbox"'+(value.WebSurvey==true ? "checked":"")+ ' onChange="setOnline(this,'+value.Id+')"></li>';
+		}
+		generatedHTML+="</ul>";
+		document.getElementById('result').innerHTML = generatedHTML;
+	}
+	
+	
+	
+    </script>
+</body>
+</html>

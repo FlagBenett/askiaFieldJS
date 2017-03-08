@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html>
+  <head>
+   <link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+   <script type="text/javascript" src="../askiafield.js"></script>
+	  <script type="text/javascript" src="../config/config.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+   <style>		
+		.agent-container { width: 800px; display: block; margin-left: auto; margin-right: auto;}
+		.control-container { width: 800px; display: block; margin-left: auto; margin-right: auto;}
+		#fetch-agent-issue { display: none; }
+		.btn { margin: 3px; }
+	</style>
+	
+	<script>
+	
+	let defaultAgentObj;
+	
+	function init(){
+		askiafield.config(
+			{CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+		);
+		document.getElementById('doc').innerHTML = askiafield.CCAURL;
+		document.getElementById('doc').setAttribute("href",askiafield.CCAURL);
+		askiafield.auth(myConfig.login,myConfig.password,myConfig.module)
+		.then(function(json){
+			if(json.StatusCode !== 200){throw json};
+			let successMessage = "connected with token "+json.Response.Token;
+			document.getElementById('authMessage').innerHTML = successMessage;
+			document.getElementById('authMessage').className = "bg-success";
+		})
+		.catch(function(json){
+			let errorMessage = "error connecting : "+json.StatusCode;
+			document.getElementById('authMessage').innerHTML = errorMessage;
+			document.getElementById('authMessage').className = "bg-danger";
+		});
+	}
+	
+	function JSONtoDIV(response){
+			response.json()
+			.then(function(json){
+					cache=json.Response;
+					document.getElementById('result').innerHTML = ''
+					json.Response.forEach(function(key){
+						document.getElementById('result').innerHTML += '<li>' + key.Name + '</li>';
+					});
+				})
+			.catch(function(error){
+			console.log("error caught");
+		}); 
+	}
+	
+	
+	function setAgentJSON(defaultAgentObj){
+		var newAgent = defaultAgentObj;
+		console.log(defaultAgentObj);
+		for (var key in defaultAgentObj) {
+			if (defaultAgentObj.hasOwnProperty(key)) {
+				var value = defaultAgentObj[key];
+				if (typeof value === 'string') {
+					newAgent[key] = document.getElementById('input' + key).value;
+				}
+				if (typeof value === 'boolean') {
+					// convert string to boolean
+					newAgent[key] = document.getElementById('checkbox' + key).checked;
+				}
+			}
+		}
+		console.log(newAgent);
+		askiafield.createAgent(
+			{
+			body:newAgent
+			}
+		)
+		.then(function(response){
+			response.json()
+			.then(function(json){
+				if(json.StatusCode !== 200){
+					document.getElementById('statusMessage').innerHTML = "couldn't create agent";
+					document.getElementById('statusMessage').className = "bg-danger";
+					throw json
+				}
+				else{
+					let successMessage = "successfully created agent "+json.Response.NewId;
+					document.getElementById('statusMessage').innerHTML = successMessage;
+					document.getElementById('statusMessage').className = "bg-success";
+				}
+			});
+		});
+	}
+
+
+	function JSONtoFORM(response){
+		// First, checks if it isn't implemented yet.
+		if (!String.prototype.format) {
+		  String.prototype.format = function() {
+			var args = arguments;
+			return this.replace(/{(\d+)}/g, function(match, number) { 
+			  return typeof args[number] != 'undefined'
+				? args[number]
+				: match
+			  ;
+			});
+		  };
+		}
+		response.json()
+		.then(function(json){
+			if (json.StatusCode === 200) {
+				document.getElementById("fetch-agent-issue").style["display"] = 'none';
+				defaultAgentObj = json.Response;
+				console.log(defaultAgentObj);
+				// Generate form HTML based upon the JSON object received
+				var strControlTemplate = '\n\t\t<div class="control-group">\n\t\t\t<label class="control-label" for="input{0}">{0}</label>\n\t\t\t<div class="controls">\n\t\t\t<input type="text" id="input{0}" placeholder="{1}" value="{1}">\n\t\t\t</div>\n\t\t</div>\n';
+				var boolControlTemplate = '\n\t\t<div class="control-group">\n\t\t<div class="controls">\n\t\t<label class="checkbox">\n\t\t\t<input type="checkbox" id="checkbox{0}" checked="{1}">{0}\n\t\t</label>\n\t\t</div>\n\t\t</div>\n';
+				var generatedHTML = "";
+				for (var key in defaultAgentObj) {
+					if (defaultAgentObj.hasOwnProperty(key)) {
+						var value = defaultAgentObj[key];
+						if (typeof value === 'string') {
+							// input types for strings
+							generatedHTML += strControlTemplate.format(key, value);
+						}
+						if (typeof value === 'boolean') {
+							// checkboxes for booleans
+							generatedHTML += boolControlTemplate.format(key, '' + value);
+						}
+					}
+				}
+				document.getElementById('result').innerHTML = generatedHTML;
+				
+			} else {
+				// Show the user a Warning that something went wrong with the API
+				document.getElementById("fetch-agent-issue").style["display"] = 'block';
+				document.getElementById("fetch-agent-issue").innerHTML('Something went wrong fetching the default agent')
+			}
+		})
+	}
+
+
+	</script>
+ 
+	</head>
+
+  <body class="container" onload="init()">
+	<h1>Example 2 : Agent creation</h1>
+	<h2>Documentation about this API can be found at: <a id="doc" href=""></a></h2>
+	<div class="well control-container">
+		<div class="alert alert-error" id="fetch-agent-issue">Something went wrong fetching the default agent</div>
+		<input type="button" class="btn" value="Get Agent/0 - Load Default Agent" onclick="askiafield.getDefaultAgent({}).then(function(response){JSONtoFORM(response)})"/>
+		<br>
+		<input type="button" class="btn" value="Post - Create New Agent" onclick="setAgentJSON(defaultAgentObj)"/>
+		<input type="button" class="btn" value="Latest Agents" onclick="askiafield.getAgents({}).then(function(response){JSONtoDIV(response)})"/>
+		<p id="authMessage"></p>
+		<p id="statusMessage"></p>
+	</div>
+
+	<div class="well agent-container">
+		<div class="form-inline" id="result">
+
+		</div>
+	</div>
+  </body>
+</html>

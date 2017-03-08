@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+    <title></title>
+	<link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+	<script type="text/javascript" src="../askiafield.js"></script>
+	<script type="text/javascript" src="../config/config.js"></script>
+</head>
+<body class="container" onload="init()">
+	<h1>Example 3 : simple .qex upload</h1>
+	<h2>Documentation about this API can be found at: <a id="doc" href=""></a></h2>
+	<div class="well control-container">
+		<p id="authMessage"></p>
+		<div class = "form">
+			<div class = "form-group">
+				<h3>Step 1 : choose your .qex</h3>
+				<input  class="btn btn-default" type="file" id="files" name="file" />
+			</div>
+			<div class = "form-group">
+				<h3>Step 2 : set CCA properties</h3>
+				<input type="text" id="SurveyName" placeholder="Survey Name" required="required"/>
+				<input type="text" id="Description" placeholder="Description"/>
+			</div>
+			<button class="btn btn-default" id="sendsimple" onClick="myUpload()" >Send</button>
+		</div>
+		 <output id="request"></output>    <br /><br />
+		<output id="result"></output>    
+	</div>
+   
+	<script>
+	
+	function init(){
+		askiafield.config(
+			{CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+		);
+		document.getElementById('doc').innerHTML = askiafield.CCAURL;
+		document.getElementById('doc').setAttribute("href",askiafield.CCAURL);
+		askiafield.auth(myConfig.login,myConfig.password,myConfig.module)
+		.then(function(json){
+			let successMessage = "connected with token "+json.Response.Token;
+			document.getElementById('authMessage').innerHTML = successMessage;
+			document.getElementById('authMessage').className = "bg-success";
+		})
+		.catch(function(json){
+			let errorMessage = "error connecting : "+json.StatusCode;
+			document.getElementById('authMessage').innerHTML = errorMessage;
+			document.getElementById('authMessage').className = "bg-danger";
+		});
+	}
+	
+	function myUpload(){
+		let surveyParams = {
+			'Name':document.getElementById('SurveyName').value,
+			'Description':document.getElementById('Description').value,
+			'InterviewStorage': 1,
+			'KeepIncompletes':false
+		}
+		let inputID = files;
+		let onSuccess = function(json){
+			document.getElementById('result').className="bg-success";
+			document.getElementById('result').innerHTML="Task created with new ID : "+json.Response.NewId;
+		};
+		let onFailure = function(json){
+			document.getElementById('result').className="bg-danger";
+			document.getElementById('result').innerHTML="error code : "+resp.StatusCode;
+		}
+		askiafield.uploadSurvey(surveyParams,inputID,onSuccess,onFailure);
+	}
+
+    </script>
+</body>
+</html>
