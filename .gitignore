@@ -84,3 +84,6 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 config_not_published/config.js
+examples_not_published/config/config.js
+examples_not_published/bootstrap.min.css
+examples_not_published/easyCAPI.html

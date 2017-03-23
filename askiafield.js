@@ -6,7 +6,7 @@
     //INIT THE API
     let askiafield = {};
     let fetching = function(param1,param2){
-	        console.log('real fetch');
+	        //console.log('real fetch');
 	        return fetch(param1,param2);
     };
     let actions;
@@ -19,6 +19,7 @@
          * @returns {JSON} promise.json() - allows you to parse the return
          */
         {name: "getSurveys", APICall: "SurveyTasks", method: "GET"},
+        {name: "getSurveyById", APICall: "SurveyTasks", method: "GET",requiredParams: [{name: "surveyId"}]},
         /** askiafield.getAgents() gets the list of agents that are currently live on the CCA server
          * @memberof askiafield
          * @function getAgents
@@ -119,7 +120,19 @@
             APICall: "SurveyTasks",
             method: "PUT",
             requiredParams: [{name: "surveyId"}, {name: "ignoreWarnings", syntax: "Content?ignoreWarnings="}]
-        }
+        },
+        {name: "getServerState",APICall: "Server/State", method: "GET"},
+        {name: "getServerConfig",APICall: "Server/Configuration", method: "GET"},
+        {name: "getDefaultCapiGroup",APICall: "CapiGroups/0", method: "GET"},
+        {name: "getCapiGroup",APICall: "CapiGroups", method: "GET",requiredParams: [{name: "groupId"}]},
+        {name: "getCapiGroups",APICall: "CapiGroups", method: "GET"},
+        {name: "createCapiGroup",APICall: "CapiGroups", method: "POST"},
+		{
+            name: "updateCapiGroup",
+            APICall: "CapiGroups",
+            method: "PUT",
+            requiredParams: [{name: "capiGroupId"}]
+        },
     ];
 	/**
 	 * @memberof askiafield
