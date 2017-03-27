@@ -19,7 +19,7 @@
          * @returns {JSON} promise.json() - allows you to parse the return
          */
         {name: "getSurveys", APICall: "SurveyTasks", method: "GET"},
-        {name: "getSurveyById", APICall: "SurveyTasks", method: "GET",requiredParams: [{name: "surveyId"}]},
+        {name: "getSurveyById", APICall: "SurveyTasks/{surveyId}", method: "GET"},
         /** askiafield.getAgents() gets the list of agents that are currently live on the CCA server
          * @memberof askiafield
          * @function getAgents
@@ -100,9 +100,8 @@
          */
         {
             name: "setSurveyOnline",
-            APICall: "SurveyTasks",
-            method: "PUT",
-            requiredParams: [{name: "surveyId"}, {name: "webConnectionId", syntax: "WebConnections/"}]
+            APICall: "SurveyTasks/{surveyId}/WebConnections/{webConnectionId}",
+            method: "PUT"
         },
         /**
          * @memberof askiafield
@@ -117,22 +116,17 @@
          */
         {
             name: "updateSurvey",
-            APICall: "SurveyTasks",
-            method: "PUT",
-            requiredParams: [{name: "surveyId"}, {name: "ignoreWarnings", syntax: "Content?ignoreWarnings="}]
+            APICall: "SurveyTasks/{surveyId}/Content?ignoreWarnings={ignoreWarnings}",
+            method: "PUT"
         },
         {name: "getServerState",APICall: "Server/State", method: "GET"},
         {name: "getServerConfig",APICall: "Server/Configuration", method: "GET"},
         {name: "getDefaultCapiGroup",APICall: "CapiGroups/0", method: "GET"},
-        {name: "getCapiGroup",APICall: "CapiGroups", method: "GET",requiredParams: [{name: "groupId"}]},
+        {name: "getCapiGroup",APICall: "CapiGroups/{groupId}", method: "GET"},
         {name: "getCapiGroups",APICall: "CapiGroups", method: "GET"},
         {name: "createCapiGroup",APICall: "CapiGroups", method: "POST"},
-		{
-            name: "updateCapiGroup",
-            APICall: "CapiGroups",
-            method: "PUT",
-            requiredParams: [{name: "capiGroupId"}]
-        },
+		{name: "updateCapiGroup",APICall: "CapiGroups/{capiGroupId}",method: "PUT"},
+		{name: "getQuota",APICall: "SurveyTasks/{surveyId}/Quota", method: "GET"}
     ];
 	/**
 	 * @memberof askiafield
@@ -173,31 +167,76 @@
 		}
 	}
 	
+	function extractParams(instr){
+		let startIndex;
+		let strlen = instr.length;
+		let endIndex;
+		let result=[];
+		let processStr = instr;
+		let counter = 0;
+		
+		while(processStr.search("{")!=-1 || counter ==4){
+				console.log("loop");
+				startIndex=processStr.search("{");
+				endIndex=processStr.search("}");
+				result.push(processStr.substring(startIndex+1,endIndex));
+				processStr = processStr.substring(endIndex+1,strlen);
+				counter += 1;
+				console.log(processStr);
+		}
+		return result
+	}
+	
+	function buildAPICall(instr,par,inpar){
+		console.log(par);
+		let startIndex = 0;
+		let endIndex=0;
+		let processStr = instr;
+		let counter = 0;
+		let result="";
+		let strlen;
+		
+		if(processStr.search("{")==-1){
+			return processStr
+		}
+		else{
+			while(counter<par.length){
+				strlen = instr.length;
+				startIndex=processStr.search("{");
+				endIndex=processStr.search("}")||strlen;
+				result+=processStr.substring(0,processStr.search("{"))+inpar[par[counter]];
+				processStr = processStr.substring(endIndex+1,strlen);
+				console.log(processStr);
+				counter++;
+			}
+			result+=processStr.substring(0,processStr.length);
+		}
+		
+		return result
+		
+	}
+	
 	function executeRestQuery(params){
 		let APICall = params.APICall;
 		let body = params.body;
 		let CCAURL = askiafield.CCAURL;
 		let token = askiafield.token;
-        let requiredParams = params.requiredParams;
+        let requiredParams = extractParams(APICall);
+		let newAPICall;
 		if(requiredParams){
 			for(requiredParamItem of requiredParams){
-				if (!params.hasOwnProperty(requiredParamItem.name)){
-					throw('error : missing parameter '+requiredParamItem.name+' in ' +params.actionName);
-				}
-				else{
-					if((requiredParamItem.hasOwnProperty("syntax"))){
-						APICall+= "/"+requiredParamItem.syntax+params[requiredParamItem.name];
-					}
-					else{
-						APICall+="/"+params[requiredParamItem.name];
-					}
+				if (!params.hasOwnProperty(requiredParamItem)){
+					throw('error : missing parameter '+requiredParamItem+' in ' +params.actionName);
 				}
 			}
+			console.log(requiredParams);
+			
+			newAPICall = buildAPICall(APICall,requiredParams,params);
 			//APICall+="/"+params[requiredParams[0].name]+"/WebConnections/"+params[requiredParams[1].name]
 			//APICall+="/"+params[requiredParams[0].name]+"/"+requiredParams[1].syntax+params[requiredParams[1].name]
 			
 		}
-		console.log("calling API "+APICall);
+		console.log("calling API "+newAPICall);
         let headers = {
 			"Content-Type": params.contentType||"text/json",
 			'Authorization': 'Basic ' + token
@@ -205,8 +244,8 @@
 		if(headers["Content-Type"]=="text/json"){
 			body=JSON.stringify(body);
 		}
-		//console.log("REST API CALL BODY : "+body);
-        let result = askiafield.fetching(CCAURL + APICall, {
+		//console.log("REST API CALL BODY : "+newAPICall);
+        let result = askiafield.fetching(CCAURL + newAPICall, {
 			method:params.method,
 			headers:headers,
 			body: body
@@ -244,7 +283,7 @@
 	 * @param {function} onFailure - Failure callback function
 	 * @namespace Helpers
 	 */
-	function uploadSurvey(jsonParams,inputId,onSuccess, onFailure){
+	function uploadSurvey(jsonParams,inputId,onSuccess, onFailure,logInputId){
         let reader = new FileReader();
 		reader.readAsDataURL(inputId.files[0]);
 		reader.addEventListener("load", function () {
@@ -259,7 +298,9 @@
 			'Content-Transfer-Encoding: base64 \r\n\r\n';
 			data += dataString;
 			data += '\r\n--'+httpHeaderBoundary+'--\r\n';
-			document.getElementById('request').innerHTML = "Sending data : "+data;
+			if(logInputId){
+				document.getElementById(logInputId).innerHTML = "Sending data : "+data;
+			}
 			//sending this body to askiafield API
 			return askiafield.createSurvey({
 				body:data,
