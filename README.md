@@ -5,6 +5,19 @@ JS wrapper for askiaField webAPI
 Welcome to the askiaFieldJS wiki!
 This wrapper is promise-based, so it has compatibility limitations in IE and Safari. It is currently based on the [Fetch API](https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API) and should always return Promise objects.
 
+# Usage
+To make a call via this wrapper, I recommend using the convenient [.then() method](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) of the promise object. This will allow you to run asynchronous queries easily. In the same fashion, the [.catch() method](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) can be used at the end of a chain of then() calls
+Example with the "getAgents" action :
+
+```
+askiafield.getAgents({}).then((prom)=>{
+  prom.json().then((jsonresp)=>{
+    //parsing the response
+    console.log(jsonresp);
+  })
+})
+```
+
 # Setup
 1. Edit config.js with relevant connection details
 1. You can use askiafield.js as an external file on client-side HTML pages (see example in the [/Examples folder](https://github.com/StephenPadawan/askiaFieldJS/tree/master/Examples))
