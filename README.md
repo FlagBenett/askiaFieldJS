@@ -9,7 +9,7 @@ This wrapper is promise-based, so it has compatibility limitations in IE and Saf
 To make a call via this wrapper, I recommend using the convenient [.then() method](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/then) of the promise object. This will allow you to run asynchronous queries easily. In the same fashion, the [.catch() method](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Promise/catch) can be used at the end of a chain of then() calls
 Example with the "getAgents" action :
 
-```
+```javascript
 askiafield.getAgents({}).then((prom)=>{
   prom.json().then((jsonresp)=>{
     //parsing the response
