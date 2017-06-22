@@ -126,7 +126,9 @@
         {name: "getCapiGroups",APICall: "CapiGroups", method: "GET"},
         {name: "createCapiGroup",APICall: "CapiGroups", method: "POST"},
 		{name: "updateCapiGroup",APICall: "CapiGroups/{capiGroupId}",method: "PUT"},
-		{name: "getQuota",APICall: "SurveyTasks/{surveyId}/Quota", method: "GET"}
+		{name: "getQuota",APICall: "SurveyTasks/{surveyId}/Quota", method: "GET"},
+		{name: "checkAuthToken",APICall: "Session/{token}/Check", method: "GET"},
+		{name: "getQuotaAvailability",APICall: "SurveyTasks/{id}/Quota/Availability/{listId}/{contactMode}", method: "GET"}
     ];
 	/**
 	 * @memberof askiafield
@@ -253,25 +255,45 @@
 		return result
 	}
 	
+	//auth can be done with permanent token (in this case auth() is called only with the token as parameter, or via user+pass+module
 	function auth(user,pass,mod,onSuccess){
-		let result;
-        let body = {
-			username:user,
-			password:pass, 
-			module:mod
-		};
-		return executeRestQuery({
-			body:body,
-			APICall:'session',
-			method:'post'
-		})
-		.then(function(response){
-			return response.json()
-			.then(function(json){
-				askiafield.config({token:json.Response.Token});
-				return json;//onSuccess(json);
-			});
-		});
+		switch(arguments.length){
+			//connection via auth Token
+			case 1:
+				let authToken = arguments[0]
+				console.log(authToken);
+				//checking the token and returning the check result to client
+				return askiafield.checkAuthToken({token:authToken})
+				.then(function(response){
+					return response.json()
+					.then(function(json){
+						askiafield.config({token:authToken});
+						return json;//onSuccess(json);
+					});
+				});
+				break;
+			//connection via username + pass + module
+			default:
+				let result;
+				let body = {
+					username:user,
+					password:pass, 
+					module:mod
+				};
+				//trying the provided credentials and returning the result to client
+				return executeRestQuery({
+					body:body,
+					APICall:'session',
+					method:'post'
+				})
+				.then(function(response){
+					return response.json()
+					.then(function(json){
+						askiafield.config({token:json.Response.Token});
+						return json;//onSuccess(json);
+					});
+				});
+		}
 	}
 	
 	/**

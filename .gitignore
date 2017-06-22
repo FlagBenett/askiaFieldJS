@@ -100,3 +100,8 @@ examples_not_published/askia.css
 examples_not_published/index_files/askia.css
 examples_not_published/index_files/logo.png
 tester.html
+examples_not_published/3bis_qex_by_xml.html
+*.zip
+examples_not_published/quotas_availability.html
+examples_not_published/auth_tokens.html
+examples_not_published/quotas.html
