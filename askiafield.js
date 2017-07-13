@@ -43,6 +43,7 @@
          * @returns {JSON} promise.json() - allows you to parse the return
          */
         {name: "getLists", APICall: "Lists", method: "GET"},
+        {name: "getList", APICall: "Lists/{ListId}", method: "GET"},
         {name: "getJobs", APICall: "Jobs", method: "GET"},
         {name: "getJobSchedules", APICall: "JobSchedules", method: "GET"},
         /**
@@ -137,7 +138,7 @@
      * @description Check if the argument is a string (see: {@link module:foobar~hello})
      * @param {String} string - The string
      * @returns {String} Returns true if string is valid, false otherwise
-     */ 
+     */
 	function appendMethod(action) {
 	   askiafield[action.name] = function (params) {
 		params.APICall=action.APICall;
@@ -159,7 +160,7 @@
 	function config(params){
 		if(!params){
 			return {
-				
+
 			};
 		}
 		else{
@@ -168,7 +169,7 @@
 			//console.log(askiafield);
 		}
 	}
-	
+
 	function extractParams(instr){
 		let startIndex;
 		let strlen = instr.length;
@@ -176,7 +177,7 @@
 		let result=[];
 		let processStr = instr;
 		let counter = 0;
-		
+
 		while(processStr.search("{")!=-1 || counter ==4){
 				console.log("loop");
 				startIndex=processStr.search("{");
@@ -188,7 +189,7 @@
 		}
 		return result
 	}
-	
+
 	function buildAPICall(instr,par,inpar){
 		console.log(par);
 		let startIndex = 0;
@@ -197,7 +198,7 @@
 		let counter = 0;
 		let result="";
 		let strlen;
-		
+
 		if(processStr.search("{")==-1){
 			return processStr
 		}
@@ -213,11 +214,11 @@
 			}
 			result+=processStr.substring(0,processStr.length);
 		}
-		
+
 		return result
-		
+
 	}
-	
+
 	function executeRestQuery(params){
 		let APICall = params.APICall;
 		let body = params.body;
@@ -232,11 +233,11 @@
 				}
 			}
 			console.log(requiredParams);
-			
+
 			newAPICall = buildAPICall(APICall,requiredParams,params);
 			//APICall+="/"+params[requiredParams[0].name]+"/WebConnections/"+params[requiredParams[1].name]
 			//APICall+="/"+params[requiredParams[0].name]+"/"+requiredParams[1].syntax+params[requiredParams[1].name]
-			
+
 		}
 		console.log("calling API "+newAPICall);
         let headers = {
@@ -254,7 +255,7 @@
 		});
 		return result
 	}
-	
+
 	//auth can be done with permanent token (in this case auth() is called only with the token as parameter, or via user+pass+module
 	function auth(user,pass,mod,onSuccess){
 		switch(arguments.length){
@@ -277,7 +278,7 @@
 				let result;
 				let body = {
 					username:user,
-					password:pass, 
+					password:pass,
 					module:mod
 				};
 				//trying the provided credentials and returning the result to client
@@ -295,7 +296,7 @@
 				});
 		}
 	}
-	
+
 	/**
 	 * Helper to the createSurvey() action. This allows to upload a .qex file without needing to set up the multipart header of the HTTP request.
 	 * @param {Object} jsonParams - list of parameters to set in CCA.
@@ -344,7 +345,7 @@
 					onFailure(json);
 				})
 			})
-		}); 
+		});
 	}
 //PUBLISH THE API TO CURRENT WINDOW
 if (typeof module !== 'undefined' && typeof module.exports !== 'undefined')
@@ -352,5 +353,3 @@ if (typeof module !== 'undefined' && typeof module.exports !== 'undefined')
   else
     window.askiafield = askiafield;
 }())
-
-
