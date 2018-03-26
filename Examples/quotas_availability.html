@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html>
+  <head>
+   <link href='./bootstrap.min.css' rel='stylesheet' type='text/css'>
+   <script type="text/javascript" src="../askiafield.js"></script>
+      <script type="text/javascript" src="./config/config.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+   <style>
+		button{
+		     height: 100%;
+		}
+	</style>
+	</head>
+
+
+  <body class="container" onload="init()">
+	<h1>Quota Availability V1</h1>
+	<div>
+		<div id="authMessage"></div>
+		<div class="well">
+			<h2>Step 1 - Select survey</h2>
+			<select id="allSurveys" class="form-control"></select>
+			<div id="step2" style="display:none">
+				<h2>Step 2 - Select List</h2>
+				<div id="resultcontainer">
+					<select id="lists" class="form-control"></select>
+					<button id="checkQuota" class="btn btn-success form-control">Check quota availability</button>
+					<div id="loading"></div>
+					<br><br><br>
+					<ul id="result" class="list-unstyled"></ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+       init();
+		document.getElementById("allSurveys").addEventListener("change",function(){
+				showLoading();
+				//getCapiAgentsbyTask(this.value);
+				getListsbyTask(this.value);
+		});
+		document.getElementById("checkQuota").addEventListener("click",
+			()=>{
+				showLoading();
+				getQuotaAvailability(document.getElementById('allSurveys').value,document.getElementById('lists').value);
+
+			}
+		);
+		let defaultCapiBody;
+        let allAgents;
+
+		function init(){
+            askiafield.config(
+                {CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+            );
+			var id = myConfig.login;
+            var pass = myConfig.password;
+            var mod = myConfig.module;
+            askiafield.auth(id,pass,mod)
+                .then((json)=>{
+                    if (json.StatusCode !==200){throw json};
+                    let successMessage = "connected with token "+json.Response.Token;
+                    document.getElementById('authMessage').innerHTML = successMessage;
+                    document.getElementById('authMessage').className = "bg-success";
+					askiafield.getSurveys({})
+					.then((resp)=>{
+						resp.json().then(function(json){JSONtoSelect(json.Response,'allSurveys')});
+					});
+					/*askiafield.getAgents({}).then(function(resp){
+						resp.json()
+							.then((jsonresp)=>{
+								allAgents = jsonresp.Response;
+								JSONtoSelect(allAgents,"allAgents")
+							})
+					})*/
+                })
+                .catch((json)=>{
+                    let errorMessage = "error connecting : "+json.StatusCode;
+                    document.getElementById('authMessage').innerHTML = errorMessage;
+                    document.getElementById('authMessage').className = "bg-danger";
+                });
+        }
+
+		function getQuotaAvailability(id,listId){
+			askiafield.getQuotaAvailability({id:id,listId,listId,contactMode:2})
+			.then((resp)=>{
+                resp.json()
+				.then((jsonresp)=>{
+					console.log(jsonresp);
+				})
+			});
+
+		}
+
+		function getCapiAgentsbyTask(surveyId){
+			console.log(surveyId);
+            let result =[];
+			document.getElementById('step2').setAttribute('style','display:block');
+            askiafield.getCapiGroups({})
+            .then((resp)=>{
+                resp.json()
+                    .then((jsonresp)=>{
+                        for(jsonrespId of jsonresp.Response){
+                            if(jsonrespId.SurveyId==surveyId && jsonrespId.Name == "EZ_CAPI"+surveyId){
+                                for(agentMember of jsonrespId.CapiMemberships){
+                                    let capiAgent={};
+                                    capiAgent.id = agentMember.AgentId;
+                                    for(agentDetail of allAgents ){
+                                        if(agentDetail.Id == agentMember.AgentId){
+                                            capiAgent.agentName = agentDetail.Name;
+                                        }
+                                    }
+                                    result.push(capiAgent);
+                                }
+                            }
+                        }
+						console.log(result);
+                        JSONtoSelect(result,"allAgents")
+						//document.getElementById('resultcontainer').setAttribute('style','display:block');
+                    })
+                }
+            )
+		}
+
+		function getListsbyTask(surveyId){
+			console.log(surveyId);
+            let result =[];
+			document.getElementById('step2').setAttribute('style','display:block');
+            askiafield.getLists({})
+            .then((resp)=>{
+                resp.json()
+                    .then((jsonresp)=>{
+						console.log(jsonresp);
+                        for(jsonrespId of jsonresp.Response){
+                            if(jsonrespId.TargetId==surveyId){
+								var listItem = {};
+								listItem.Name = jsonrespId.Name;
+								listItem.Id = jsonrespId.Id;
+								result.push(listItem);
+                            }
+                        }
+						console.log(result);
+                        JSONtoSelect(result,"lists")
+						document.getElementById('resultcontainer').setAttribute('style','display:block');
+						//document.getElementById('agentLoading').setAttribute('style','display:none');
+                    })
+                }
+            )
+		}
+
+
+		function showLoading(){
+			/*let loadingDiv = document.createElement("div");
+			loadingDiv.innerHTML = "Loading...";
+			loadingDiv.id = "agentLoading";
+			document.getElementById('resultcontainer').appendChild(loadingDiv) ;*/
+		}
+
+		//addordelete parameter : "delete" will delete, anything else will add
+		function editEasyCapiGroup(surveyId,agentId,addordelete){
+			askiafield.getCapiGroups({})
+			.then((resp)=>{
+				resp.json()
+				.then((jsonresp)=>{
+					let hasEZCapi = false;
+					for(capiGroupItem of jsonresp.Response){
+						if(capiGroupItem.Name == "EZ_CAPI"+surveyId){
+							let newGroupProperties = {
+								CapiMemberships:[{Active:true,AgentId:agentId,Deleted:addordelete=="delete"}]
+							}
+							askiafield.updateCapiGroup({capiGroupId:capiGroupItem.Id,body:newGroupProperties})
+							.then(()=>{getCapiAgentsbyTask(surveyId)})
+							hasEZCapi = true;
+						}
+					}
+					if(!hasEZCapi){
+						createEasyCapi(surveyId,agentId);
+					}
+
+				})
+			})
+		}
+
+        function createEasyCapi(surveyId,agentId){
+			console.log("creating");
+            askiafield.getDefaultCapiGroup({})
+                .then((resp)=>{
+                    resp.json()
+                        .then((jsonresp)=>{
+                                //console.log(jsonresp.Response);
+                                defaultCapiBody = jsonresp.Response;
+                                defaultCapiBody.Name = "EZ_CAPI"+surveyId;
+								defaultCapiBody.CapiMemberships = [{Active:true,AgentId:agentId,Deleted:false}];
+								defaultCapiBody.SurveyId = surveyId;
+								askiafield.createCapiGroup({body:defaultCapiBody})
+								.then(()=>{getCapiAgentsbyTask(surveyId)})
+                            }
+                        )
+                })
+        }
+
+        function AgentListToHtmlUl(jsonList, container){
+            //console.log(jsonList);
+			document.getElementById(container).innerHTML="";
+			for (listItem of jsonList){
+				let item = document.createElement("li");
+				item.innerHTML=listItem.agentName;
+				item.value=listItem.id;
+				item.className="form-control input-lg";
+				let itemButton = document.createElement("button");
+				itemButton.innerHTML = "-";
+				itemButton.value = listItem.id;
+				itemButton.className = "btn btn-danger pull-right"
+				itemButton.addEventListener("click",
+					()=>{
+						editEasyCapiGroup(document.getElementById('allSurveys').value,itemButton.value,"delete");
+					}
+				)
+				item.appendChild(itemButton);
+				document.getElementById(container).appendChild(item);
+			}
+        }
+
+		function AgentListToHtmlDatalist(jsonList, container){
+            //console.log(jsonList);
+			for (listItem of jsonList){
+				let item = document.createElement("option");
+				item.label=listItem.Name;
+				item.value=listItem.Id;
+				document.getElementById(container).appendChild(item);
+			}
+        }
+
+		function JSONtoSelect(jsonList,selectID){
+            for (jsonListItem of jsonList){
+                let newopt = document.createElement("option");
+                newopt.text = jsonListItem.Name;
+                newopt.innerHTML = jsonListItem.Name;
+                newopt.value = jsonListItem.Id;
+                document.getElementById(selectID).add(newopt);
+            }
+        }
+
+	</script>
+
+  </body>
+</html>

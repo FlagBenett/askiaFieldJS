@@ -104,6 +104,11 @@
             APICall: "SurveyTasks/{surveyId}/WebConnections/{webConnectionId}",
             method: "PUT"
         },
+		{
+            name: "setSurveyOffline",
+            APICall: "SurveyTasks/{surveyId}/WebConnections/{webConnectionId}",
+            method: "DELETE"
+        },
         /**
          * @memberof askiafield
          * @function askiafield.updateSurvey
@@ -129,8 +134,27 @@
 		{name: "updateCapiGroup",APICall: "CapiGroups/{capiGroupId}",method: "PUT"},
 		{name: "getQuota",APICall: "SurveyTasks/{surveyId}/Quota", method: "GET"},
 		{name: "checkAuthToken",APICall: "Session/{token}/Check", method: "GET"},
-		{name: "getQuotaAvailability",APICall: "SurveyTasks/{id}/Quota/Availability/{listId}/{contactMode}", method: "GET"}
-    ];
+		{name: "getQuotaAvailability",APICall: "SurveyTasks/{id}/Quota/Availability/{listId}/{contactMode}", method: "GET"},
+		{name: "setQuota",APICall: "SurveyTasks/{id}/Quota/{token}/{questionid}", method: "POST"},
+		{name: "unlockQuota",APICall: "SurveyTasks/{id}/Quota/Unlock", method: "GET"},
+		{name: "saveQuota",APICall: "SurveyTasks/{id}/Quota/Save", method: "GET"},
+
+    /***5.4.7 methods***/
+    {name: "startList",APICall: "Lists/{id}/Start", method: "POST"},
+    {name: "stopList",APICall: "Lists/{id}/Stop", method: "POST"},
+    {name: "updateListWithExternalData",APICall: "Lists/{id}/UpdateWithExternalData", method: "POST"},
+    {name: "findContacts",APICall: "Lists/FindContacts", method: "POST"},
+    {name: "checkRequestToken",APICall: "Lists/FindContacts/{id}/Status", method: "GET"},
+    {name: "findContactsWithRequestToken",APICall: "Lists/FindContacts/{id}", method: "GET"},
+    {name: "getSurveyFeedback",APICall: "SurveyTasks/{id}/Feedback", method: "GET"},
+    //{name: "getSurveyFeedbackById",APICall: "SurveyTasks/{id}/Feedback/{idFeedback}", method: "GET"},
+    {name: "getSurveyFeedbackImage",APICall: "SurveyTasks/{id}/Feedback/{idFeedback}/Screenshot", method: "GET"},
+    {name: "downloadFile",APICall: "Files/Requests/{datatoken}/Download", method: "GET"},
+    {name: "listFiles",APICall: "Files", method: "GET"},
+    {name: "getDatabaseConnections",APICall: "DatabaseConnectionConfiguration", method: "GET"},
+    {name: "getDatabaseSurveySettings",APICall: "SurveyTasks/{id}/DatabaseSettings?RSAPublicKey={RSAPublicKey}", method: "GET"}
+
+  ];
 	/**
 	 * @memberof askiafield
      * @function appendMethod
@@ -179,19 +203,19 @@
 		let counter = 0;
 
 		while(processStr.search("{")!=-1 || counter ==4){
-				console.log("loop");
+				//console.log("loop");
 				startIndex=processStr.search("{");
 				endIndex=processStr.search("}");
 				result.push(processStr.substring(startIndex+1,endIndex));
 				processStr = processStr.substring(endIndex+1,strlen);
 				counter += 1;
-				console.log(processStr);
+				//console.log(processStr);
 		}
 		return result
 	}
 
 	function buildAPICall(instr,par,inpar){
-		console.log(par);
+		//console.log(par);
 		let startIndex = 0;
 		let endIndex=0;
 		let processStr = instr;
@@ -209,7 +233,7 @@
 				endIndex=processStr.search("}")||strlen;
 				result+=processStr.substring(0,processStr.search("{"))+inpar[par[counter]];
 				processStr = processStr.substring(endIndex+1,strlen);
-				console.log(processStr);
+				//console.log(processStr);
 				counter++;
 			}
 			result+=processStr.substring(0,processStr.length);
@@ -232,7 +256,7 @@
 					throw('error : missing parameter '+requiredParamItem+' in ' +params.actionName);
 				}
 			}
-			console.log(requiredParams);
+			//console.log(requiredParams);
 
 			newAPICall = buildAPICall(APICall,requiredParams,params);
 			//APICall+="/"+params[requiredParams[0].name]+"/WebConnections/"+params[requiredParams[1].name]
