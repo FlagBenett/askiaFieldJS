@@ -167,19 +167,21 @@
 			function adaptData(obj){
 				//Create a single column to include Question name + Response caption
 				if(obj.QuestionShortcut == null){
-					obj.DisplayedColumn = obj.ResponseShortCaption;
+					//rename root token
+					if(obj.Token == 0){
+						obj.DisplayedColumn = "Survey";
+					}
+					else{
+						obj.DisplayedColumn = escapeHtml(obj.ResponseShortCaption);
+					}
 				}
 				//Create a single column to include Question name + Response caption
 				else{
-					obj.DisplayedColumn = obj.QuestionShortcut;
+					obj.DisplayedColumn = escapeHtml(obj.QuestionShortcut);
 				}
 				//Manage numeric Ranges
 				if(obj.IsNumeric && obj.RangeMin >=0 && obj.RangeMax >=0){
 					obj.DisplayedColumn = "["+obj.RangeMin+" -> "+obj.RangeMax+"[";
-				}
-				//rename root token
-				if(obj.Token == 0){
-					obj.DisplayedColumn = "Survey";
 				}
 				return obj	
 			}
@@ -230,6 +232,16 @@
 					document.getElementById(selectID).add(newopt);
 				}
 			}
+			
+			function escapeHtml(unsafe) {
+				return unsafe
+					 .replace(/&/g, "&amp;")
+					 .replace(/</g, "&lt;")
+					 .replace(/>/g, "&gt;")
+					 .replace(/"/g, "&quot;")
+					 .replace(/'/g, "&#039;");
+			 }
+ 
 			/***end utils***/
 		</script>
   </body>
