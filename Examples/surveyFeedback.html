@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+  <head>
+   <link href='./bootstrap.min.css' rel='stylesheet' type='text/css'>
+   <script type="text/javascript" src="../askiafield.js"></script>
+      <script type="text/javascript" src="./config/config.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+
+   <style>
+		button{
+		     height: 100%;
+		}
+	</style>
+	</head>
+
+
+  <body class="container" onload="init()">
+	<h1>Survey feedback</h1>
+	<div>
+		<div id="authMessage"></div>
+		<div class="well">
+			<h2>Step 1 - Select survey</h2>
+			<select id="allSurveys" class="form-control"></select>
+			<div id="step2" style="display:none">
+				<h2>Step 2 - Select feedback entry</h2>
+				<div id="resultcontainer">
+					<select id="allFeedback" class="form-control"></select>
+					<button id="getSurveyFeedbackImage" class="btn btn-success form-control">Get Feedback image</button>
+					<div id="loading"></div>
+          <div id="resultComment" style="width:100%"></div>
+          <img id="resultImg" style="width:100%"></img>
+					<br><br><br>
+					<ul id="result" class="list-unstyled"></ul>
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+       init();
+		document.getElementById("allSurveys").addEventListener("change",function(){
+				getSurveyFeedback(this.value);
+		});
+		document.getElementById("getSurveyFeedbackImage").addEventListener("click",
+			()=>{
+				getSurveyFeedbackImage(document.getElementById('allSurveys').value,document.getElementById('allFeedback').value);
+			}
+		);
+		let defaultCapiBody;
+        let allAgents;
+
+		function init(){
+            askiafield.config(
+                {CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+            );
+			var id = myConfig.login;
+            var pass = myConfig.password;
+            var mod = myConfig.module;
+            askiafield.auth(id,pass,mod)
+                .then((json)=>{
+                    if (json.StatusCode !==200){throw json};
+                    let successMessage = "connected with token "+json.Response.Token;
+                    document.getElementById('authMessage').innerHTML = successMessage;
+                    document.getElementById('authMessage').className = "bg-success";
+					askiafield.getSurveys({})
+					.then((resp)=>{
+						resp.json().then(function(json){JSONtoSelect(json.Response,'allSurveys')});
+					});
+                })
+                .catch((json)=>{
+                    let errorMessage = "error connecting : "+json.StatusCode;
+                    document.getElementById('authMessage').innerHTML = errorMessage;
+                    document.getElementById('authMessage').className = "bg-danger";
+                });
+        }
+
+		
+    function getSurveyFeedback(surveyId){
+			console.log(surveyId);
+            let result =[];
+			document.getElementById('step2').setAttribute('style','display:block');
+            askiafield.getSurveyFeedback({id:surveyId})
+            .then((resp)=>{
+                resp.json()
+                    .then((jsonresp)=>{
+                      console.log(jsonresp);
+                      JSONtoSelect2(jsonresp.Response,"allFeedback");
+                    })
+                }
+            )
+		}
+    function getSurveyFeedbackImage(surveyId,FeedbackId){
+      askiafield.getSurveyFeedback({id:surveyId})
+      .then((resp)=>{
+          resp.json()
+              .then((jsonresp)=>{
+              for(i=0;i<jsonresp.Response.length;i++){
+                //console.log(jsonresp.Response[i].Comment);
+                if(jsonresp.Response[i].Id==FeedbackId){
+                  document.getElementById("resultComment").innerHTML = jsonresp.Response[i].Comment;
+                  break
+                }
+              }
+
+              })
+          }
+        );
+        askiafield.getSurveyFeedbackImage({id:surveyId, idFeedback:FeedbackId})
+            .then((resp)=>{
+                resp.json()
+                    .then((jsonresp)=>{
+                      console.log(jsonresp);
+                      askiafield.downloadFile({datatoken:jsonresp.Response.DataToken})
+                        .then(res => res.blob())
+                      	.then(res => {
+                      		var objectURL = URL.createObjectURL(res);
+                      		document.getElementById("resultImg").src = objectURL;
+                      });
+                    })
+                }
+            )
+		}
+
+	function JSONtoSelect(jsonList,selectID,display){
+      let select = document.getElementById(selectID);
+      let length = select.options.length;
+      for (i = 0; i < length; i++) {
+          select.options[i] = null;
+      }
+      let textToDisplay = display||"Name";
+        for (jsonListItem of jsonList){
+              let newopt = document.createElement("option");
+              newopt.text = jsonListItem[textToDisplay];
+              newopt.innerHTML = jsonListItem[textToDisplay];
+              newopt.value = jsonListItem.Id;
+              document.getElementById(selectID).add(newopt);
+        }
+      }
+
+      function JSONtoSelect2(jsonList,selectID){
+        let select = document.getElementById(selectID);
+        let length = select.options.length;
+        for (i = 0; i < length; i++) {
+            select.options[i] = null;
+        }
+        for (jsonListItem of jsonList){
+              let newopt = document.createElement("option");
+              newopt.text = jsonListItem["Id"]+" : "+jsonListItem["Comment"];
+              newopt.innerHTML = jsonListItem["Id"]+" : "+jsonListItem["Comment"];
+              newopt.value = jsonListItem.Id;
+              document.getElementById(selectID).add(newopt);
+        }
+      }
+
+	</script>
+
+  </body>
+</html>

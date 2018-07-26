@@ -134,6 +134,7 @@
 		{name: "updateCapiGroup",APICall: "CapiGroups/{capiGroupId}",method: "PUT"},
 		{name: "getQuota",APICall: "SurveyTasks/{surveyId}/Quota", method: "GET"},
 		{name: "checkAuthToken",APICall: "Session/{token}/Check", method: "GET"},
+		{name: "checkAuthTokenTimeRemaining",APICall: "Session/TimeRemaining", method: "GET"},
 		{name: "getQuotaAvailability",APICall: "SurveyTasks/{id}/Quota/Availability/{listId}/{contactMode}", method: "GET"},
 		{name: "setQuota",APICall: "SurveyTasks/{id}/Quota/{token}/{questionid}", method: "POST"},
 		{name: "unlockQuota",APICall: "SurveyTasks/{id}/Quota/Unlock", method: "GET"},

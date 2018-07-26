@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+   <link href='bootstrap.min.css' rel='stylesheet' type='text/css'>
+   <script type="text/javascript" src="../askiafield.js"></script>
+      <script type="text/javascript" src="./config/config.js"></script>
+    <link href='http://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,700italic,800italic,400,300,600,700,800' rel='stylesheet' type='text/css'>
+   <style>
+		#resultcontainer{
+			border:1px solid black;
+		}
+		button, input{
+		margin: 5px 0 5px 0;
+		}
+	</style>
+	
+	<script>
+
+	function signin(){
+		var id = document.getElementById('UID').value;
+		askiafield.auth(id/*,pass,mod*/)
+		.then(function(json){
+			console.log(json);
+			if (json.StatusCode !==200 || json.Response.Valid !== true){throw json};
+			let successMessage = "connected with token "+id;
+			document.getElementById('authMessage').innerHTML = successMessage;
+			document.getElementById('authMessage').className = "bg-success";
+		})
+		.catch(function(json){
+			let errorMessage = "error connecting : "+json.StatusCode;
+			document.getElementById('authMessage').innerHTML = errorMessage;
+			document.getElementById('authMessage').className = "bg-danger";
+		});
+	}
+	
+	function checkExpiration(){
+		var id = document.getElementById('UID').value;
+		askiafield.checkAuthTokenTimeRemaining({})
+		.then(function(resp){
+			resp.json()
+			.then(function(json){
+				console.log(json);
+			})
+		});
+	
+	
+	}
+	
+	function init(){
+		askiafield.config(
+			{CCAURL:myConfig.CCAURL+'/ccawebapi/'}
+		);
+		document.getElementById('doc').innerHTML = askiafield.CCAURL;
+		document.getElementById('doc').setAttribute("href",askiafield.CCAURL);
+	}
+	
+	function JSONtoDIV(response){
+		//console.log(promise);
+			response.json()
+			.then(function(json){
+			    console.log(json);
+					cache=json.Response;
+					document.getElementById('result').innerHTML = ''
+					json.Response.forEach(function(key){
+						document.getElementById('result').innerHTML += '<li>' + key.Name + '</li>';
+					});
+				})
+			.catch(function(error){
+			console.log("error caught");
+		}); 
+	}
+	
+
+	</script>
+
+	</head>
+	
+	
+  <body class="container" onload="init()">
+	<h1>Example 1 : Authentication + GETs with CCAWebAPI</h1>
+	<h2>Documentation about this API can be found at <a id="doc" href=""></a></h2>
+	<div class="well control-container">
+		<form class="form-horizontal">
+			<label for="UID">Token</label>
+			<input type="text" id="UID" class="form-control" placeholder="login"/>
+			<input type="button" class="btn btn-default" value="Check token" onclick="signin()"/>
+			<input type="button" class="btn btn-default" value="Check token expiration" onclick="checkExpiration()"/>
+		</form>
+		<div id="authMessage"></div>
+	</div>
+	
+	
+    Results : 
+	<div id="resultcontainer">
+		<div id="loading"></div>
+		<ul id="result" class="table-striped"></ul>
+	</div>
+
+  </body>
+</html>
